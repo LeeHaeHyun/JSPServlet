@@ -1,0 +1,75 @@
+import java.util.Properties; 
+
+import javax.mail.Message; 
+import javax.mail.MessagingException; 
+import javax.mail.PasswordAuthentication; 
+import javax.mail.Session; 
+import javax.mail.Transport; 
+import javax.mail.internet.InternetAddress; 
+import javax.mail.internet.MimeMessage; 
+
+public class naverSMTP 
+{ 
+
+public static void main(String[] args) 
+{ 
+
+  String host = "210.103.215.9"; 
+  final String user = ""easycross@naver.com"; 
+  final String password = "메일 계정 비밀번호";
+ 
+//수신 메일
+  String to = "수신자@이메일"; 
+  
+  // Get the session object 
+  // java.util.Properties 클래스를 사용하여 STMP 서버와 관련되 정보를 지정 
+  Properties props = new Properties(); 
+  props.put("mail.smtp.host", host); 
+  props.put("mail.smtp.auth", "true"); 
+
+  // Properties에 저장디어있는 설정 값을 getDefaultInstance() 메소드로 설정값을 저장하여 세션 생성 
+  Session session = Session.getDefaultInstance(props, new javax.mail.Authenticator() { 
+   protected PasswordAuthentication getPasswordAuthentication() { 
+    return new PasswordAuthentication(user, password); 
+   } 
+  }); 
+   
+  // Compose the message 
+  try { 
+   MimeMessage message = new MimeMessage(session); 
+   //발신자 셋팅 
+   message.setFrom(new InternetAddress(user)); 
+    
+   //메일 보내는 사람이 한명일 경우 
+//    message.addRecipient(Message.RecipientType.TO, new InternetAddress(to)); 
+    
+   //메일 보내는 사람이 다수일 경우 
+   InternetAddress[] toAddr = new InternetAddress[3]; 
+   toAddr[0] = new InternetAddress ("수신자1@이메일"); 
+   toAddr[1] = new InternetAddress ("수신자2@이메일"); 
+   toAddr[2] = new InternetAddress ("수신자3@이메일"); 
+
+   //수신자 셋팅 (두가지 셋팅방법이 있지만 동일한걸로 생각됨..)
+//    message.addRecipients(Message.RecipientType.TO, toAddr); 
+   message.setRecipients(Message.RecipientType.TO, toAddr ); 
+
+    
+   // 메일 제목을 입력
+   message.setSubject("[Subject] Java Mail Test"); 
+    
+   // 메일 내용을 입력
+   message.setText("Simple mail test.."); 
+
+   // 메세지 보내는 성공 알림
+   Transport.send(message); 
+   System.out.println("message sent successfully..."); 
+
+  } 
+  catch (MessagingException e) 
+  { 
+   e.printStackTrace(); 
+  } 
+
+} 
+
+}

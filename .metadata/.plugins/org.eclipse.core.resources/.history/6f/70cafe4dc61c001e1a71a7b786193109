@@ -1,0 +1,179 @@
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.HeadlessException;
+import java.awt.SystemColor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+
+public class Z_GameUPDown extends JFrame
+{
+	private JFrame frame; // 정보 은닉화 프레임
+	private JTextField answer; // 텍스트 
+	private JLabel image01; // 이미지
+	int lifeRemaining = 7; // 기회 선언
+
+	// 생성자 오버라이딩
+	public Z_GameUPDown(JFrame frame, JTextField answer, JLabel image01, int lifeRemaining) throws HeadlessException
+	{
+		this.frame = frame; 
+		this.answer = answer;
+		this.image01 = image01;
+		this.lifeRemaining = lifeRemaining;
+	}
+	
+	/**
+	 * Launch the application.
+	 */
+
+	public static void main(String[] args)
+	{	
+		EventQueue.invokeLater(new Runnable()
+		{
+			public void run()
+			{
+				try
+				{
+					Z_GameUPDown window = new Z_GameUPDown();
+					window.frame.setVisible(true);
+					
+				} catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+	/**
+	 * Create the application.
+	 */
+	public Z_GameUPDown()
+	{
+		initialize();
+		
+	}
+	private void initialize()
+	{
+		lifeRemaining = 7;
+		int randomNumber = (int)(Math.random()*100)+1;
+		//System.out.println(randomNumber);
+		
+		frame = new JFrame();
+		frame.setTitle("업다운 게임");
+		frame.setResizable(false); //창 고정
+		frame.setBounds(100, 100, 640, 480);
+		frame.getContentPane().setLayout(null);
+		frame.setVisible(true);
+		
+		JPanel panel = new JPanel();
+		panel.setBackground(SystemColor.desktop);
+		panel.setBounds(0, 0, 624, 441);
+		frame.getContentPane().add(panel);
+		panel.setLayout(null);
+		
+		
+		JLabel life = new JLabel("기회 : "+ (lifeRemaining));
+		life.setHorizontalAlignment(SwingConstants.CENTER);
+		life.setFont(new Font("나눔고딕", Font.BOLD, 41));
+		life.setBounds(413, 45, 156, 59);
+		panel.add(life);
+		
+		JLabel lblNewLabel_1 = new JLabel("1~100까지 숫자를 골라줘!");
+		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
+		lblNewLabel_1.setFont(new Font("나눔고딕", Font.BOLD, 41));
+		lblNewLabel_1.setBounds(74, 122, 495, 59);
+		panel.add(lblNewLabel_1);
+		
+		answer = new JTextField();
+		answer.setHorizontalAlignment(SwingConstants.CENTER);
+		answer.setFont(new Font("나눔고딕", Font.PLAIN, 42));
+		answer.setBounds(46, 206, 522, 59);
+		panel.add(answer);
+		answer.setColumns(10);
+		
+		JButton guess = new JButton("선  택  하  기");
+		guess.setForeground(new Color(0, 0, 0));
+		guess.setFont(new Font("나눔고딕", Font.BOLD, 50));
+
+		guess.setBounds(46, 288, 522, 59);
+		panel.add(guess);
+		
+		
+		JLabel res = new JLabel("맞 춰 봐 !");
+		res.setHorizontalAlignment(SwingConstants.CENTER);
+		res.setForeground(Color.BLACK);
+		res.setFont(new Font("나눔고딕", Font.BOLD, 40));
+		res.setBounds(46, 364, 522, 51); // 라벨 사이즈 및 위치
+		panel.add(res);
+
+		JLabel image_1 = new JLabel(""); // 이미지 라벨 생성
+		image_1.setIcon(new ImageIcon("image/playerOn.png")); // 이미지 삽입
+		image_1.setBounds(70, 10, 171, 151); // 크기
+		panel.add(image_1);
+		guess.addActionListener(new ActionListener() { // 버튼 리스너
+			public void actionPerformed(ActionEvent e) {
+				int ans = Integer.parseInt(answer.getText());
+				if(lifeRemaining <= 1 && (!(ans == randomNumber))) // 기회가 1 이하이면서 못맞출경우
+				{
+					// 완전 패배 코딩
+					image_1.setIcon(new ImageIcon("image/playerEnd.png")); // 패배 이미지
+					image_1.setBounds(70, 10, 171, 151); // 패배 이미지 크기 및 배치
+					panel.add(image_1); // 패널에 이미지 추가
+					res.setForeground(Color.RED); // 빨간색으로
+					int lifeRemaining = -1;
+					life.setText("실패!!");
+					res.setText("땡!! 끝났어! 못맞췄지롱~");
+					answer.enable(false); //버그 방지, 버튼 비활성화 시킴
+					return;
+				}
+				if(ans == randomNumber) // 정답을 맞출 경우
+				{
+					// 승리
+					image_1.setIcon(new ImageIcon("image/playerWin.png")); // 승리 이미지
+					image_1.setBounds(70, 10, 171, 151); // 승리 이미지 크기 및 배치
+					panel.add(image_1); // 패널에 이미지 추가
+					res.setForeground(Color.BLUE); // 파란색으로
+					int lifeRemaining = -1;
+					life.setText("성공!!");
+					res.setText("정답이야! 딱 맞췄어~~!!");
+					answer.enable(false); //버그 방지, 버튼 비활성화 시킴
+					return;
+				}
+				if(ans > randomNumber && lifeRemaining > 0) // 숫자가 크고 목숨이 있을 경우
+				{
+					image_1.setIcon(new ImageIcon("image/playerDn.png")); // 다운 이미지
+					image_1.setBounds(70, 10, 171, 151); // 다운 이미지 크기 및 배치
+					panel.add(image_1); // 패널에 이미지 추가
+					res.setForeground(Color.RED); // 빨간색으로 알림
+					life.setText("기회 : "+ --lifeRemaining); // 텍스트 기회가 줄고
+					res.setText("더 작은 숫자야! ▼");
+				}
+				if(ans < randomNumber && lifeRemaining > 0) // 숫자가 작고 목숨이 있을 경우
+				{
+					image_1.setIcon(new ImageIcon("image/playerUp.png")); // 업 이미지
+					image_1.setBounds(70, 10, 171, 151); // 업 이미지 크기 및 배치
+					panel.add(image_1); // 패널에 이미지 추가
+					res.setForeground(Color.RED); // 빨간색으로 알림
+					life.setText("기회 : "+ --lifeRemaining); // 텍스트 기회가 줄고
+					res.setText("더 큰 숫자야! ▲");
+				}
+				
+			}
+		});			
+	}
+}

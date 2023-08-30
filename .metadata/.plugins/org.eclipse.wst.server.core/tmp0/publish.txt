@@ -1,0 +1,7 @@
+#Tomcat publish data
+#Thu Aug 24 09:43:10 KST 2023
+org.eclipse.jst.jee.server\:NaverLogin=C\:\\Dev\\apache-tomcat-9.0.78\\wtpwebapps\\NaverLogin
+org.eclipse.jst.jee.server\:GoogleLogin=C\:\\Dev\\apache-tomcat-9.0.78\\wtpwebapps\\GoogleLogin
+org.eclipse.jst.jee.server\:MustHaveJSP=C\:\\Dev\\apache-tomcat-9.0.78\\wtpwebapps\\MustHaveJSP
+org.eclipse.jst.jee.server\:FacebookLogin=C\:\\Dev\\apache-tomcat-9.0.78\\wtpwebapps\\FacebookLogin
+org.eclipse.jst.jee.server\:Kakaologin=C\:\\Dev\\apache-tomcat-9.0.78\\wtpwebapps\\Kakaologin

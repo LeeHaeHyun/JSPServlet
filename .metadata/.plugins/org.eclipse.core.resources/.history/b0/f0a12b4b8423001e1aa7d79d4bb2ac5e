@@ -1,0 +1,14 @@
+package ex01;
+
+public class Little
+{
+
+	public static void main(String[] args)
+	{
+		String targetstr;
+		String targetStr = " ... "
+		String replaceStr = targetStr.replaceAll("\\p{Z}","");
+
+	}
+
+}

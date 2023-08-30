@@ -1,0 +1,16 @@
+package snippet;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class Snippet
+{
+	// 서버의 클라이언트 정보들 저장
+	static HashMap<String, PrintWriter> list = new HashMap<String, PrintWriter>();
+	// 채널에 클라이언트 정보들 저장
+	static HashMap<String, ArrayList<String>> roomlist = new HashMap<String, ArrayList<String>>();
+	boolean check = false;
+	
+}
+

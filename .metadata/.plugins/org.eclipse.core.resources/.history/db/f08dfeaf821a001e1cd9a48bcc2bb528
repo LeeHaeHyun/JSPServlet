@@ -1,0 +1,19 @@
+package snippet;
+
+public class Bad
+{
+
+	public static void main(String[] args)
+	{
+		Sring bad = "야이";
+		BadWordFiltering badWordFiltering1 = new BadWordFiltering();
+		BadWordFiltering badWordFiltering2 = new BadWordFiltering("-");
+
+		String text1 = badWordFiltering.change(bad);	//기본값 *
+		String text2 = badWordFiltering.change(bad);	//입력값 -
+		System.out.println(text1);
+		System.out.println(text2);
+
+	}
+
+}

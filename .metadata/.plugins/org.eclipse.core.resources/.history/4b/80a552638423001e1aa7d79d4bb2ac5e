@@ -1,0 +1,13 @@
+package ex01;
+
+public class Little
+{
+
+	public static void main(String[] args)
+	{
+		String targetStr = " 안 녕 하 세 요    ";
+		String replaceStr = targetStr.replaceAll("\\p{Z}","");
+		System.out.println(replaceStr);
+	}
+
+}

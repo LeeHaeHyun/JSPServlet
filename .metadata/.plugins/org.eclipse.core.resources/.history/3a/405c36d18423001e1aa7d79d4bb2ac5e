@@ -1,0 +1,14 @@
+package ex01;
+
+public class Little
+{
+
+	public static void main(String[] args)
+	{
+		String str3 = "hello.my.name";
+		String[] spt = str3.split("\\.");
+		System.out.println( spt[0] ); // 출력 안됨
+		System.out.println( spt[1] ); // 출력 안됨
+	}
+
+}

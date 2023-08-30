@@ -1,0 +1,334 @@
+// 각 클라이언트 접속에 대해 하나씩 작동하는 스레드 클래스 
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Random;
+
+public class ClientThread extends Thread 
+{
+	// 서버의 클라이언트 정보들 저장
+	static HashMap<String, PrintWriter> list = new HashMap<String, PrintWriter>();
+	// 채널에 클라이언트 정보들 저장
+	static HashMap<String, ArrayList<String>> roomlist = new HashMap<String, ArrayList<String>>();
+	boolean check = false;
+
+	Socket socket;
+	PrintWriter writer;
+	LocalTime connectTime;
+	String name;
+	String room;
+	Random r = new Random();
+
+	ClientThread(Socket socket) 
+	{
+		this.socket = socket;
+		this.room = "MBTI";
+		// 방이 없으면 MBTI 로비 생성.
+		if (this.roomlist.size() == 0)
+			this.roomlist.put("MBTI", new ArrayList<String>());
+		try {
+			writer = new PrintWriter(socket.getOutputStream());
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public void run() 
+	{
+		this.name = null;
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+			// 수신된 첫번째 문자열을 대화명으로 사용하기 위해 저장
+			this.name = reader.readLine();
+
+			if (!list.containsKey(name)) // 아이디의 중복을 제거하기 위해 처리.
+			{
+				list.put(name, writer); // 중복되지 않으면 클라이언트 닉네임 추가.
+				roomlist.get("MBTI").add(name); // 로비에 유저를 추가.
+
+				sendAll("# " + name + "님이 들어오셨습니다(*^^*)");
+				Thread.sleep(10);
+				sendToOne("# [/도움] 입력시 명령어 목록을 확인할 수 있습니다.", name);
+				printUserList(); // 접속자 유저 정보 리스트
+
+				this.connectTime = LocalTime.now(); // 접속한 시간을 저장.
+				while (true) 
+				{
+					String str = reader.readLine();
+					if (str == null) 
+					{
+						System.out.println("break");
+						break;
+					}
+					if (str.charAt(0) == '/') // 명령어를 감지하면 chCommand로 동작 구현.
+					{
+						chCommand(str.substring(1));
+						continue;
+					}
+					sendRoom(responseString(str)); // 수신된 메시지 앞에 대화명을 붙여서 모든 클라이언트로 송신
+					// 실수로 +뒤에 공백으로 입력하면 프로그램이 break되어서 멈춰버리므로 예외적으로 넣어준다.					
+				}
+			} 
+			else // 중복되면 클라이언트 사망
+			{
+				System.out.println(" ※ 이미 해당 계정이 접속중입니다.");
+				check = true;
+				writer.println("die");
+				writer.flush();
+			}
+
+		} 
+		catch (Exception e) 
+		{
+			System.out.println(e.getMessage());
+		} 
+		finally 
+		{
+			if (check == false) // 클라이언트가 정상적으로 종료 되었을 경우
+			{
+				list.remove(name); // 서버 리스트 삭제
+				roomlist.get(room).remove(name); // 방에서도 삭제
+				if (roomlist.get(room).size() == 0 && room.equals("MBTI"))
+					roomlist.remove(room);
+				sendAll("# " + name + "님이 나가셨습니다(- -;;)"); // 사용자가 접속을 종료했다는 메시지를 모든 클라이언트로 보냅니다.
+
+				printUserList(); // 접속자 유저 정보 리스트 갱신
+			}
+			try
+			{
+				socket.close();
+			} 
+			catch (Exception ignored) 
+			{
+			}
+		}
+	}
+
+	// 서버에 연결되어 있는 모든 클라이언트로 똑같은 메시지를 보냅니다.
+	private void sendAll(String str) 
+	{
+		for (String name : list.keySet()) 
+		{
+			list.get(name).println(str);
+			list.get(name).flush();
+			
+		}
+	}
+
+	// 한명에게 메시지를 보냄
+	private void sendToOne(String str, String id) 
+	{
+		list.get(id).println(str);
+		list.get(id).flush();
+	}
+
+	// 응답할 메시지 문자열을 만들어줌
+	private String responseString(String str) 
+	{
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[a HH시 mm분 ss초]");
+		LocalTime now = LocalTime.now();
+		String time = "[" + now.format(formatter) + "]";
+		str = time + " " + this.name + " : " + str;
+
+		return str;
+	}
+
+	// 접속 유지 시간을 구해줌
+	private String gapTime(LocalTime startTime) 
+	{
+
+		LocalTime curTime = LocalTime.now();
+
+		long duration = startTime.until(curTime, ChronoUnit.SECONDS);
+
+		if (duration < 60) {
+			return (" ▶ 접속한 시간이 " + "[" + duration + "] 초 지났습니다.");
+		} else {
+			return (" ▶ 접속한 시간이 " + "[" + duration / 60 + "] 분 지났습니다.");
+		}
+	}
+
+	//명령어 식별 메서드
+	private void chCommand(String str) 
+	{
+		// 명령어와 명령내용을 공백 기준으로 구분 [0]-명령어구분자 [1]...-명령내용
+		String[] command = str.split(" ");
+		
+		// 명령어 출력 
+		if (command[0].equals("도움"))
+		{
+			String[] commands = {"=====================",
+							     "/+ 방이름 <방생성>"
+							   , "/입 방이름 <방입장>"
+							   , "/접 <접속시간>"
+							   , "/귓 이름 할말 <귓속말>"
+							   , "/랜덤 <랜덤뽑기>"
+							   , "/방 <방목록>"
+							   ,"====================="};				
+					for(String tmp:commands)
+					{
+						sendToOne(tmp,name);
+						return;
+					}
+		}
+		//접속시간명령어
+		if (command[0].equals("접")) 
+		{
+			sendToOne(gapTime(connectTime), name);
+			return;
+		}
+		//제비뽑기 기능 명령어
+		if (command[0].equals("랜덤")) 
+		{
+			//이터레이터를 무작위 회수 만큼 돌려 무작위의 사용자명 출력
+			Iterator<String> key = list.keySet().iterator();
+			int rd = r.nextInt(list.size());
+			int i;
+			String rName = null;
+			for (i = 0; i < rd + 1; i++) 
+			{
+				rName = key.next();
+			}
+			sendAll("(#두근두근!) "+ rName + "]" + " 님이 당첨되셨습니다!★");
+		}		
+		//방 리스트 출력 명령어
+		if (command[0].equals("방"))
+		{
+			String rl = "";
+			int cnt = 0;
+			for(String room : roomlist.keySet())
+			{
+				rl += room+", ";
+				cnt++;
+				if(cnt % 5 == 0)
+				{
+					sendToOne(rl,name);
+					rl = "";
+				}
+			}
+			//방 정보가 남아있을 경우
+			if(rl != "")
+				sendToOne(rl,name);
+		}
+	
+		if (command[0].equals("+") && str.charAt(2) == ' ' || str.charAt(3) == ' ')
+		{
+			roomlist.put("공백", new ArrayList<String>());
+			roomlist.get("공백").add(name);
+			roomlist.get(room).remove(name);
+			if (roomlist.get(room).size() == 0 && !room.equals("MBTI"))
+				roomlist.remove(room);
+			room = command[1];
+			sendRoom(" ※ "+ name + " 님께서 " + "[" + room + "]" + "을(를) 개설했습니다.");
+		} 
+		else //방이름이 이미 있을 때
+		{
+			writer.println(" ♣ 이미 같은 제목의 방이 있습니다.");
+			writer.flush();
+		}
+	}
+		}
+			 
+//		String[] command = str.split(" ");
+		//방생성 명령어 
+		if (command[0].equals("+")) 
+		{
+			//방이름이 기존에 없을 때 생성
+			if (!roomlist.keySet().contains(command[1])) 
+			{
+				roomlist.put(command[1], new ArrayList<String>());
+				roomlist.get(command[1]).add(name);
+				roomlist.get(room).remove(name);
+				if (roomlist.get(room).size() == 0 && !room.equals("MBTI"))
+					roomlist.remove(room);
+				room = command[1];
+				sendRoom(" ※ "+ name + " 님께서 " + "[" + room + "]" + "을(를) 개설했습니다.");
+			} 
+			else //방이름이 이미 있을 때
+			{
+				writer.println(" ♣ 이미 같은 제목의 방이 있습니다.");
+				writer.flush();
+			}
+		}
+		// 방입장 명령어
+		else if (command[0].equals("입")) 
+		{
+			//방이 존재하는 경우 입장
+			if (roomlist.keySet().contains(command[1])) 
+			{
+				roomlist.get(command[1]).add(name);
+				roomlist.get(room).remove(name);
+				if (roomlist.get(room).size() == 0 && !room.equals("MBTI"))
+					roomlist.remove(room);
+				room = command[1];
+				sendRoom("#" + name + "님께서 " + "[" + room + "]" + "에 들어오셨습니다(*^^*)");
+			} 
+			else //방이 없을 때 처리
+			{
+				writer.println(" ※ 방 이름이 존재하지 않습니다.");
+				writer.flush();
+			}
+		} 
+		// 귓속말 명령어
+		else if (command[0].equals("귓")) 
+		{
+			// 귓말 대상이 존재하고 메세지가 공백이 아닐 때
+			if (list.containsKey(command[1]) && command[2] != "") 
+			{
+				sendToOne(responseString("/>>" + command[2]), command[1]);
+				sendToOne(responseString("/>>" + command[2]), name);
+			}
+			else
+			{
+				writer.println(" ※ 귓속말 대상이 있는지 확인해주세요.");
+				writer.flush();
+			}
+		}
+	}
+//		else //명령어가 없는 경우
+//		{
+//			sendToOne("존재하지 않는 명령어입니다.", name);
+//		}
+//	}
+	
+	//해당하는 방에 메시지 출력 메서드
+	private void sendRoom(String str) 
+	{
+		for (String name : roomlist.get(room)) 
+		{
+			list.get(name).println(str);
+			list.get(name).flush();
+		}
+	}
+	//접속자 정보 리스트 갱신 메서드
+	private void printUserList() 
+	{
+		try 
+		{
+			super.sleep(10);  // 쓰레드 속도차로 인해 출력이 안되는 경우를 예방
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		}
+		sendAll("/clear");
+
+		// 접속자 수 출력
+		sendAll("◈  접속: " + list.size() + "명-");
+
+		// 접속자 명단 출력
+		for (String keyName : list.keySet()) 
+		{
+			sendAll("- " + keyName);
+		}
+	}
+}
